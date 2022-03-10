@@ -44,3 +44,28 @@ https://learn.javascript.ru/default-browser-action
 
 Дополнительное задание:\
 Реализовать функционал второго выпадающего списка и закрытие на крестик меню с выбором города
+
+#### Day 2 ####
+Вывод карточек в верстку\
+Поиск
+
+HH backend на Node:\
+- установить Node.js
+
+- cd hh_backend 
+
+- node index
+
+
+[memo]
+
+- npm install --global http-server
+
+- npx http-server [path] [options] (npx http-server ./hh_backend -p 8080)
+
+[/memo]
+
+Необязательное задание:\
+В заголовке поиска должна быть корректная информация по количеству найденных вакансий
+
+При загрузке страницы строки заголовка быть не должно
