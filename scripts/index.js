@@ -20,6 +20,11 @@ const formSearch = document.querySelector('.bottom__search');
 const BASE_URL = 'http://localhost:3000';
 const urlApiGetVacancy = new URL('api/vacancy', BASE_URL);
 
+const orderBy = document.querySelector('#order_by');
+const searchPeriod = document.querySelector('#search_period');
+
+let data = [];
+
 const createUrlApiGetVacancyById = (id = '') => {
     let res ;
     if (id) {
@@ -89,22 +94,51 @@ const renderCards = (data = ['']) => {
 
 };
 
+const urlAddSearchParameter = (url, parameter, value) => {    
+    for (let item of url.searchParams.keys()){        
+        url.searchParams.delete(item);
+    } 
+    if(parameter){
+        url.searchParams.delete(parameter);
+        url.searchParams.append(parameter, value);
+    }    
+    return url;    
+};
 
+const sortData = () => {
+    switch(orderBy.value){
+        case 'down':
+            data.sort((a, b) => a.minCompensation > b.minCompensation ? 1 : -1);
+            break;
+        case 'up':
+            data.sort((a, b) => b.minCompensation > a.minCompensation ? 1 : -1);
+            break;
+        default:
+            data.sort((a, b) => new Date(b.date).getTime() > new Date(a.date).getTime() ? 1 : -1);
+    }
+};
 
-const getData = ({search, id} = {}) => {
-    if (search) {
-        urlApiGetVacancy.searchParams.delete('search');
-        urlApiGetVacancy.searchParams.append('search', search);
-        return fetch(urlApiGetVacancy);
+const filterData = () => {    
+    const date = new Date();
+    date.setDate(date.getDate() - searchPeriod.value);
+    return data.filter(item => new Date(item.date).getTime() > date); 
+};
+
+const getData = ({search, id, country, city} = {}) => {
+    if (search) {        
+        return fetch(urlAddSearchParameter(urlApiGetVacancy, 'search', search));
     }
     if (id) {
-        const url = createUrlApiGetVacancyById(id);
-        console.log(url);    
+        const url = createUrlApiGetVacancyById(id);            
         return fetch(url);
-    } else {
-        return fetch(urlApiGetVacancy);
+    } 
+    if (country){
+        return fetch(urlAddSearchParameter(urlApiGetVacancy, 'country', country));
     }
-    
+    if (city){
+        return fetch(urlAddSearchParameter(urlApiGetVacancy, 'city', city));
+    }
+    return fetch(urlApiGetVacancy);
 };
 
 const handlerOptions = () => {
@@ -122,6 +156,9 @@ const handlerOptions = () => {
         const target = e.target;
         if (target.classList.contains('option__item')){
             optionBtnOrder.textContent = target.textContent;
+            orderBy.value = target.dataset.sort;
+            sortData();
+            renderCards(data);
             for (const elem of optionListOrder.querySelectorAll('.option__item')){
                 if (elem === target){
                     elem.classList.add('option__item_active');
@@ -137,6 +174,9 @@ const handlerOptions = () => {
         const target = e.target;
         if (target.classList.contains('option__item')){
             optionBtnPeriod.textContent = target.textContent;
+            searchPeriod.value = target.dataset.date;
+            const tempData = filterData();
+            renderCards(tempData);
             for (const elem of optionListPeriod.querySelectorAll('.option__item')){
                 if (elem === target){
                     elem.classList.add('option__item_active');
@@ -158,9 +198,29 @@ const handlerCity = () => {
         city.classList.remove('city_active');
     });
     
-    cityRegionList.addEventListener('click', (e) => {
+    cityRegionList.addEventListener('click', async (e) => {
         const target = e.target;
         if(target.classList.contains('city__link')){
+            const hash = new URL(target.href).hash.substring(1);
+            const option = {
+                [hash]: target.textContent
+            };
+            data = await getData(option)
+            .then(response => {
+                if(response.ok){
+                    return response.json();
+                } 
+                throw new Error('Something went wrong');
+            })
+            .then(data => {
+                return data;
+            })    
+            .catch((error) => {
+                console.warn(error);
+            });
+            sortData();
+            data = filterData();
+            renderCards(data);
             topCityBtn.textContent = target.textContent;
             city.classList.remove('city_active');
         }
@@ -244,7 +304,7 @@ const handlerSearch = () => {
         const textSearch = formSearch.search.value;
         if (textSearch.length > 2) {
             formSearch.search.style.borderColor = '';
-            const data = await getData({search: textSearch})
+            data = await getData({search: textSearch})
             .then(response => {
                 if(response.ok){
                     return response.json();
@@ -257,6 +317,8 @@ const handlerSearch = () => {
             .catch((error) => {
                 console.warn(error);
             });
+            sortData();
+            data = filterData();
             renderCards(data);
             formSearch.reset();
             clearHeaderFound();
@@ -275,7 +337,7 @@ const handlerSearch = () => {
 };
 
 const init = async () => {
-    const data = await getData()
+    data = await getData()
     .then(response => {
         if(response.ok){
             return response.json();
@@ -288,6 +350,8 @@ const init = async () => {
     .catch((error) => {
         console.warn(error);
     });
+    sortData();
+    data = filterData();
     renderCards(data);
     
     handlerOptions();
@@ -310,5 +374,6 @@ const declOfNum = (number, words) => {
 
 clearHeaderFound('Последние вакансии');
 init();
+
 
 renderCards();
