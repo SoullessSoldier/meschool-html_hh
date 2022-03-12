@@ -52,7 +52,7 @@ https://learn.javascript.ru/default-browser-action
 Поиск
 
 Для работы необходим запуск бэкенда, BASE_URL и урл Api захардкоден в index.js\
-HH backend на Node: \
+HH backend на Node: 
 - установить Node.js
 
 - cd hh_backend 
